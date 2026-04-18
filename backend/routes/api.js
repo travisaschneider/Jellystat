@@ -226,7 +226,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
           and i."ParentId"=$1
         order by "DateCreated" desc
         limit $2`,
-        [libraryid, limit]
+        [libraryid, limit],
       );
 
       const { rows: episodes } = await db.query(
@@ -240,7 +240,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
                and i."ParentId"=$1
         order by e."DateCreated" desc
         limit $2`,
-        [libraryid, limit]
+        [libraryid, limit],
       );
 
       let lastSynctedItemDate;
@@ -258,7 +258,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
 
       if (lastSynctedItemDate !== undefined) {
         recentlyAddedFromJellystatMapped = recentlyAddedFromJellystatMapped.filter((item) =>
-          dayjs(item.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ").isAfter(lastSynctedItemDate)
+          dayjs(item.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ").isAfter(lastSynctedItemDate),
         );
       }
 
@@ -270,7 +270,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
       const recentlyAdded = [...recentlyAddedFromJellystatMapped, ...filteredDbRows];
       // Sort recentlyAdded by DateCreated in descending order
       recentlyAdded.sort(
-        (a, b) => dayjs(b.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ") - dayjs(a.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ")
+        (a, b) => dayjs(b.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ") - dayjs(a.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ"),
       );
 
       res.send(recentlyAdded);
@@ -282,7 +282,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
       where i.archived=false
       order by "DateCreated" desc
       limit $1`,
-      [limit]
+      [limit],
     );
 
     const { rows: episodes } = await db.query(
@@ -295,7 +295,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
 	          and e.archived=false
       order by e."DateCreated" desc
       limit $1`,
-      [limit]
+      [limit],
     );
     let lastSynctedItemDate;
     if (items.length > 0 && items[0].DateCreated !== undefined && items[0].DateCreated !== null) {
@@ -312,7 +312,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
 
     if (lastSynctedItemDate !== undefined) {
       recentlyAddedFromJellystatMapped = recentlyAddedFromJellystatMapped.filter((item) =>
-        dayjs(item.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ").isAfter(lastSynctedItemDate)
+        dayjs(item.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ").isAfter(lastSynctedItemDate),
       );
     }
 
@@ -330,7 +330,7 @@ router.get("/getRecentlyAdded", async (req, res) => {
 
     // Sort recentlyAdded by DateCreated in descending order
     recentlyAdded.sort(
-      (a, b) => dayjs(b.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ") - dayjs(a.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ")
+      (a, b) => dayjs(b.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ") - dayjs(a.DateCreated, "YYYY-MM-DD HH:mm:ss.SSSZ"),
     );
 
     res.send(recentlyAdded);
@@ -527,7 +527,7 @@ router.post("/updateCredentials", async (req, res) => {
 
   try {
     if (username !== undefined && config.APP_USER !== username) {
-      await db.query(`UPDATE app_config SET "APP_USER"='${username}' where "ID"=1`);
+      await db.query(`UPDATE app_config SET "APP_USER"=$1 where "ID"=1`, [username]);
     }
 
     if (current_password === undefined && new_password === undefined) {
@@ -541,9 +541,10 @@ router.post("/updateCredentials", async (req, res) => {
         result.isValid = false;
         result.errorMessage = "New Password cannot be the same as Old Password";
       } else {
-        await db.query(
-          `UPDATE app_config SET "APP_PASSWORD"='${new_password}' where "ID"=1 AND "APP_PASSWORD"='${current_password}' `
-        );
+        await db.query(`UPDATE app_config SET "APP_PASSWORD"=$1 where "ID"=1 AND "APP_PASSWORD"=$2`, [
+          new_password,
+          current_password,
+        ]);
       }
     } else {
       result.isValid = false;
@@ -566,7 +567,8 @@ router.post("/updatePassword", async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT "JF_HOST","JF_API_KEY","APP_USER" FROM app_config where "ID"=1 AND "APP_PASSWORD"='${current_password}' `
+      `SELECT "JF_HOST","JF_API_KEY","APP_USER" FROM app_config where "ID"=1 AND "APP_PASSWORD"=$1 `,
+      [current_password],
     );
 
     if (rows && rows.length > 0) {
@@ -574,9 +576,10 @@ router.post("/updatePassword", async (req, res) => {
         result.isValid = false;
         result.errorMessage = "New Password cannot be the same as Old Password";
       } else {
-        await db.query(
-          `UPDATE app_config SET "APP_PASSWORD"='${new_password}' where "ID"=1 AND "APP_PASSWORD"='${current_password}' `
-        );
+        await db.query(`UPDATE app_config SET "APP_PASSWORD"=$1 where "ID"=1 AND "APP_PASSWORD"=$2`, [
+          new_password,
+          current_password,
+        ]);
       }
     } else {
       result.isValid = false;
@@ -923,7 +926,7 @@ router.post("/getUserDetails", async (req, res) => {
       return;
     }
 
-    const { rows } = await db.query(`select * from jf_users where "Id"='${userid}'`);
+    const { rows } = await db.query(`select * from jf_users where "Id"=$1`, [userid]);
     res.send(rows[0]);
   } catch (error) {
     console.log(error);
@@ -951,7 +954,7 @@ router.post("/getLibrary", async (req, res) => {
       return;
     }
 
-    const { rows } = await db.query(`select * from jf_libraries where "Id"='${libraryid}'`);
+    const { rows } = await db.query(`select * from jf_libraries where "Id"=$1`, [libraryid]);
     res.send(rows[0]);
   } catch (error) {
     console.log(error);
@@ -989,7 +992,7 @@ router.post("/getSeasons", async (req, res) => {
 
     const { rows } = await db.query(
       `SELECT s.*, i."PrimaryImageHash", (select count(e.*) "Episodes" from jf_library_episodes e  where e."SeasonId"=s."Id") ,(select sum(ii."Size") "Size" from jf_library_episodes e join jf_item_info ii on ii."Id"=e."EpisodeId" where e."SeasonId"=s."Id") FROM jf_library_seasons s left join jf_library_items i on i."Id"=s."SeriesId" where "SeriesId"=$1`,
-      [Id]
+      [Id],
     );
     res.send(rows);
   } catch (error) {
@@ -1009,7 +1012,7 @@ router.post("/getEpisodes", async (req, res) => {
 
     const { rows } = await db.query(
       `SELECT e.*, i."PrimaryImageHash", ii."Size" FROM jf_library_episodes e left join jf_library_items i on i."Id"=e."SeriesId" join jf_item_info ii on ii."Id"=e."EpisodeId" where "SeasonId"=$1`,
-      [Id]
+      [Id],
     );
     res.send(rows);
   } catch (error) {
